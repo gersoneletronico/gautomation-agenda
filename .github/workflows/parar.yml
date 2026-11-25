@@ -1,0 +1,21 @@
+name: Parar ambiente
+
+on:
+  schedule:
+    - cron: "0 0 * * *"   # 00:00 UTC = 21:00 Brasilia/Fortaleza
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parar ambiente no Jelastic
+        env:
+          JELASTIC_TOKEN: ${{ secrets.JELASTIC_TOKEN }}
+          ENV_NAME: gautomation
+          API_HOST: app.jelastic.saveincloud.net
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS --fail --retry 3 --max-time 120             --data-urlencode "session=$JELASTIC_TOKEN"             --data-urlencode "envName=$ENV_NAME"             "https://$API_HOST/1.0/environment/control/rest/stopenv")
+          echo "$resp" | sed 's/"session":"[^"]*"/"session":"***"/g'
+          echo "$resp" | grep -q '"result":0' || { echo "Falha na API do Jelastic"; exit 1; }
